@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+<script src="http://player.twitch.tv/js/embed/v1.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.bundle.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<div id="twitch-player"></div>
+<canvas id="myChart" width="1280" height="720"></canvas>
+<script type="text/javascript">
+    var options = {
+        width: 1280,
+        height: 720,
+        autoplay: false,
+        video: "v124101248"
+    };
+    var player = new Twitch.Player("twitch-player", options);
+    player.addEventListener(Twitch.Player.READY, function () {
+        $.ajax("https://api.twitch.tv/kraken/videos/v124101248", {
+            headers: {"Client-ID": "q8x5vxmvt3si7q0s0ibx1dayxfojdjw"}
+        }).done(function (data) {
+            var start_timestamp = new Date(data.recorded_at).getTime() / 1000;
+            load_chat_data(start_timestamp, 0);
+        }).fail(function () {
+        });
+    });
+
+    load_chat_data = function (start_time, offset) {
+        $.ajax({
+            url: "chat/v124101248/" + (start_time + offset)
+        }).done(function (data) {
+            var date = new Date(offset * 1000);
+            myChart.data.labels.push(date.getUTCHours() + ":" + date.getUTCMinutes() + ":" + date.getUTCSeconds());
+            myChart.data.datasets[0].data.push(data.data.length);
+            myChart.update();
+            load_chat_data(start_time, offset + 30);
+        }).fail(function (data) {
+            alert("fail");
+        });
+    };
+
+    var ctx = $("#myChart");
+    var myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            datasets: [{
+                label: 'Messages per 30 seconds',
+                data: []
+            }]
+        },
+        options: {
+            responsive: false,
+            tooltips: {
+                callbacks: {
+                    title: function(arr, data) {
+                        return "<img src='https://static-cdn.jtvnw.net/jtv_user_pictures/chansub-global-emoticon-ebf60cd72f7aa600-24x18.png'/>";
+                    }
+                }
+            }
+        }
+    });
+</script>
+</body>
+</html>
